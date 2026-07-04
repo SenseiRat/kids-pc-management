@@ -1,1 +1,36 @@
+# Secrets
 .ansible_vault_pass
+
+# Ansible artifacts
+*.retry
+collections/ansible_collections/
+
+# Vault password files
+.vault_pass
+.vault_password
+*.vault_pass
+
+# Inventory overrides and local config
+*.local.yml
+local.yml
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Editor artifacts
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS artifacts
+.DS_Store
+Thumbs.db
