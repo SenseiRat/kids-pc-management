@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: MIT-0
+---
+- name: Add flatpak remotes to the system installation
+  community.general.flatpak_remote:
+    name: flathub
+    state: present
+    method: system
+    flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
+
+
+- name: "Install flatpak for {{ item }}"
+  community.general.flatpak:
+    name: "{{ item }}"
+    state: present
+    method: system
+  loop: "{{ flatpak_apps }}"
+
+- name: Get list of installed flatpaks on system
+  ansible.builtin.command:
+    cmd: /usr/bin/flatpak list --app --columns=application | tee /tmp/flatpaks.txt
+    creates: /tmp/flatpaks.txt
+  register: flatpak_list
+  changed_when: false
+
+- name: Uninstall applications that are not on the APL
+  community.general.flatpak:
+    name: "{{ item }}"
+    state: absent
+  when: {{ flatpak_apps is contains({{ item }}) }}
+  loop: flatpak_list.stdout_lines
+
+- name: Clean up temporary files from flatpak tasks
+  ansible.builtin.file:
+    path: /tmp/flatpaks.txt
+    state: absent
