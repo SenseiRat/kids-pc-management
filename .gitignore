@@ -1,5 +1,7 @@
 # Secrets
 .ansible_vault_pass
+.ansible_public_key
+.ansible_private_key
 
 # Ansible artifacts
 *.retry

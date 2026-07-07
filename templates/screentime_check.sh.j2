@@ -1,0 +1,43 @@
+#!/bin/bash
+
+STATE_FILE="$HOME/.local/state/screentime/state"
+mkdir -p "$(dirname "$STATE_FILE")"
+
+TODAY=$(date +%F)
+DAILY_LIMIT={{ screentime_daily_limit_minutes }}
+POLL_INTERVAL={{ screentime_poll_interval_minutes }}
+
+if [[ -f "$STATE_FILE" ]]; then
+    read -r STORED_DATE STORED_MINUTES STORED_WARNED < "$STATE_FILE"
+else
+    STORED_DATE=""
+    STORED_MINUTES=0
+    STORED_WARNED="no"
+fi
+
+if [[ "$STORED_DATE" != "$TODAY" ]]; then
+    STORED_DATE="$TODAY"
+    STORED_MINUTES=0
+    STORED_WARNED="no"
+fi
+
+SESSION_ID=$(loginctl show-user "$(whoami)" -p Sessions --value | awk '{print $1}')
+IDLE_HINT=$(loginctl show-session "$SESSION_ID" -p IdleHint --value)
+
+if [[ "$IDLE_HINT" == "no" ]]; then
+    STORED_MINUTES=$((STORED_MINUTES + POLL_INTERVAL))
+fi
+
+echo "$STORED_DATE $STORED_MINUTES $STORED_WARNED" > "$STATE_FILE"
+
+if [[ "$STORED_MINUTES" -ge "$DAILY_LIMIT" && "$STORED_WARNED" == "no" ]]; then
+    timeout 30s zenity --warning --title="Screen Time" \
+        --text="You've reached your screen time limit for today.\nThis will close in 30 seconds."
+
+{% for app in screentime_restricted_apps %}
+    flatpak kill {{ app }}
+{% endfor %}
+
+    STORED_WARNED="yes"
+    echo "$STORED_DATE $STORED_MINUTES $STORED_WARNED" > "$STATE_FILE"
+fi

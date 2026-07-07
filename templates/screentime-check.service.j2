@@ -1,0 +1,6 @@
+[Unit]
+Description=Check {{ child_username }} screen time usage
+
+[Service]
+Type=oneshot
+ExecStart=/home/{{ child_username }}/.local/bin/screentime_check.sh

@@ -1,0 +1,16 @@
+---
+- name: Check currently layered rpm-ostree packages
+  become: true
+  ansible.builtin.command:
+    cmd: rpm-ostree status
+  register: ostree_status
+  changed_when: false
+
+- name: Layer required packages
+  become: true
+  ansible.builtin.command:
+    cmd: "rpm-ostree install {{ item }}"
+  loop: "{{ ostree_apps }}"
+  when: item not in ostree_status.stdout
+  changed_when: true
+  notify: Reboot device

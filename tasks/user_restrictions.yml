@@ -1,0 +1,48 @@
+---
+- name: Deploy screentime check script
+  become: true
+  become_user: "{{ child_username }}"
+  ansible.builtin.template:
+    src: screentime_check.sh.j2
+    dest: "/home/{{ child_username }}/.local/bin/screentime_check.sh"
+    mode: '0755'
+
+- name: Deploy screentime-check user service unit
+  become: true
+  become_user: "{{ child_username }}"
+  ansible.builtin.template:
+    src: screentime-check.service.j2
+    dest: "/home/{{ child_username }}/.config/systemd/user/screentime-check.service"
+    mode: '0644'
+
+- name: Deploy screentime-check user timer unit
+  become: true
+  become_user: "{{ child_username }}"
+  ansible.builtin.template:
+    src: screentime-check.timer.j2
+    dest: "/home/{{ child_username }}/.config/systemd/user/screentime-check.timer"
+    mode: '0644'
+
+- name: Enable lingering for child user
+  become: true
+  ansible.builtin.command:
+    cmd: "loginctl enable-linger {{ child_username }}"
+  changed_when: true
+
+- name: Get child user's UID
+  become: true
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ child_username }}"
+
+- name: Enable and start screentime-check timer
+  become: true
+  become_user: "{{ child_username }}"
+  ansible.builtin.systemd_service:
+    name: screentime-check.timer
+    scope: user
+    state: started
+    enabled: true
+    daemon_reload: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[child_username][1] }}"
