@@ -1,0 +1,42 @@
+---
+- name: Set Budgie panel properties
+  become: true
+  become_user: "{{ child_username }}"
+  community.general.dconf:
+    key: "/com/solus-project/budgie-panel/panels/{{ item.0.uuid }}/{{ item.1.key }}"
+    value: "{{ item.1.value }}"
+    state: present
+  loop: "{{ budgie_panels | subelements('settings') }}"
+  loop_control:
+    label: "{{ item.0.uuid }}/{{ item.1.key }}"
+
+- name: Register top-level panel UUID list
+  become: true
+  become_user: "{{ child_username }}"
+  community.general.dconf:
+    key: "/com/solus-project/budgie-panel/panels"
+    value: "{{ budgie_panels | map(attribute='uuid') | list }}"
+    state: present
+
+- name: Set Budgie applet properties
+  become: true
+  become_user: "{{ child_username }}"
+  community.general.dconf:
+    key: "/com/solus-project/budgie-panel/applets/{{ item.0.uuid }}/{{ item.1.key }}"
+    value: "{{ item.1.value }}"
+    state: present
+  loop: "{{ budgie_applets | subelements('settings') }}"
+  loop_control:
+    label: "{{ item.0.uuid }}/{{ item.1.key }}"
+
+- name: Set Icon Task List behavior
+  become: true
+  become_user: "{{ child_username }}"
+  community.general.dconf:
+    key: "/com/solus-project/budgie-panel/instance/icon-tasklist/{{ budgie_icon_tasklist_uuid }}/{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+  loop:
+    - {key: "only-pinned", value: "false"}
+    - {key: "lock-icons", value: "true"}
+    - {key: "pinned-launchers", value: "[{{ dock_pinned_apps | map('quote') | join(', ') }}]"}

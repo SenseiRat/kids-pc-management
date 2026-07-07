@@ -7,7 +7,6 @@
     method: system
     flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
 
-
 - name: "Install flatpak for {{ item }}"
   community.general.flatpak:
     name: "{{ item }}"
@@ -17,8 +16,7 @@
 
 - name: Get list of installed flatpaks on system
   ansible.builtin.command:
-    cmd: /usr/bin/flatpak list --app --columns=application | tee /tmp/flatpaks.txt
-    creates: /tmp/flatpaks.txt
+    cmd: /usr/bin/flatpak list --app --columns=application
   register: flatpak_list
   changed_when: false
 
@@ -26,10 +24,5 @@
   community.general.flatpak:
     name: "{{ item }}"
     state: absent
-  when: {{ flatpak_apps is contains({{ item }}) }}
-  loop: flatpak_list.stdout_lines
-
-- name: Clean up temporary files from flatpak tasks
-  ansible.builtin.file:
-    path: /tmp/flatpaks.txt
-    state: absent
+  when: flatpak_apps is not contains(item)
+  loop: "{{ flatpak_list.stdout_lines }}"

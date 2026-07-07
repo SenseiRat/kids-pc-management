@@ -1,0 +1,20 @@
+---
+- name: Configure SSH server for device
+  become: true
+  ansible.builtin.copy:
+    src: 60-sshd-hardening.conf
+    dest: "/etc/ssh/sshd_config.d/60-sshd-hardening.conf"
+    owner: root
+    group: root
+    mode: "0644"
+    force: true
+    remote_src: false
+
+- name: Configure open ports on firewalld service
+  become: true
+  ansible.posix.firewalld:
+    port: "{{ item }}"
+    state: enabled
+    permanent: true
+    immediate: true
+  loop: "{{ allowed_firewall_ports }}"

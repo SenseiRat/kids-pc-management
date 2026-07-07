@@ -1,0 +1,47 @@
+---
+- name: Set idle time before turning off monitors
+  become: true
+  become_user: "{{ child_username }}"
+  community.general.dconf:
+    key: "/org/gnome/desktop/session/idle-delay"
+    value: 'uint32 600'
+    state: present
+
+- name: Configure system suspend settings
+  become: true
+  ansible.builtin.copy:
+    src: 60-system-suspend.conf
+    dest: /etc/systemd/logind.conf.d/60-system-suspend.conf
+    owner: root
+    group: root
+    mode: '0644'
+    force: true
+    remote_src: false
+  notify: Restart logind
+
+- name: Copy maintenance window systemd timer files to remote
+  become: true
+  ansible.builtin.copy:
+    src: "{{ item }}"
+    dest: "/etc/systemd/system/{{ item }}"
+    owner: root
+    group: root
+    mode: '0644'
+    force: true
+    remote_src: false
+  loop:
+    - maintenance-window-start.service
+    - maintenance-window-start.timer
+    - maintenance-window-stop.service
+    - maintenance-window-stop.timer
+
+- name: Enable maintenance window systemd timers
+  become: true
+  ansible.builtin.systemd_service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+    daemon_reload: true
+  loop:
+    - maintenance-window-start.timer
+    - maintenance-window-stop.timer

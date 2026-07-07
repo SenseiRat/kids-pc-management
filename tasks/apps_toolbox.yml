@@ -1,0 +1,27 @@
+---
+- name: Check list of toolboxes on device
+  become: true
+  become_user: "{{ parent_username }}"
+  ansible.builtin.command:
+    cmd: toolbox list
+  register: toolbox_list
+  changed_when: false
+
+- name: Create admin toolbox on device
+  become: true
+  become_user: "{{ parent_username }}"
+  ansible.builtin.command:
+    cmd: toolbox create --container {{ toolbox_name }}
+  when: "toolbox_name not in toolbox_list.stdout"
+  changed_when: true
+
+- name: Install packages into admin toolbox
+  become: true
+  become_user: "{{ parent_username }}"
+  ansible.builtin.command:
+    cmd: >
+      toolbox run --container {{ toolbox_name }}
+      sudo dnf install --assumeyes --quiet
+      {{ toolbox_apps | join(' ') }}
+  register: installed_packages
+  changed_when: "'Nothing to do' not in installed_packages.stdout"

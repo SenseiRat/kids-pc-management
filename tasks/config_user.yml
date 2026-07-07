@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: MIT-0
+---
+# tasks file for user_accounts
+- name: "Create user: {{ child_username }}"
+  become: true
+  ansible.builtin.user:
+    name: "{{ child_username }}"
+    state: present
+    password: '!'
+    expires: -1
+
+- name: "Create user: {{ item.user }}"
+  become: true
+  ansible.builtin.user:
+    name: "{{ item.user }}"
+    state: present
+    password: "{{ item.pass }}"
+    expires: -1
+    groups: wheel
+    append: true
+  loop:
+    - {"user":"{{ parent_username }}", "pass":"{{ parent_password }}"}
+    - {"user":"{{ ansible_username }}", "pass":"!"}
+
+- name: "Add ssh public key for {{ item.user }}"
+  become: true
+  ansible.posix.authorized_key:
+    user: "{{ item.user }}"
+    key: "{{ item.key }}"
+    state: present
+  loop:
+    - {"user":"{{ parent_username }}", "key":"{{ parent_public_key }}"}
+    - {"user":"{{ ansible_username }}", "key":"{{ ansible_public_key }}"}
+
+- name: "Enable autologin for {{ child_username }}"
+  become: true
+  community.general.ini_file:
+    path: /etc/lightdm/lightdm.conf
+    section: Seat:*
+    option: "{{ item.option }}"
+    value: "{{ item.value }}"
+    mode: "0644"
+    state: present
+  loop:
+    - {"option":"autologin-user", "value":"{{ child_username }}"}
+    - {"option":"autologin-user-timeout", "value":"0"}
+
+- name: "Enable passwordless sudo for {{ ansible_username }}"
+  become: true
+  ansible.builtin.lineinfile:
+    path: "/etc/sudoers.d/{{ ansible_username }}"
+    state: present
+    line: "{{ ansible_username }} ALL=(ALL) NOPASSWD: ALL"
+    create: true
+    mode: "0440"
+    validate: /usr/sbin/visudo -cf %s
