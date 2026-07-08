@@ -7,7 +7,7 @@
     method: system
     flatpakrepo_url: https://dl.flathub.org/repo/flathub.flatpakrepo
 
-- name: "Install flatpak for {{ item }}"
+- name: "Install flatpaks"
   community.general.flatpak:
     name: "{{ item }}"
     state: present

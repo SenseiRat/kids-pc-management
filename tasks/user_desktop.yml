@@ -39,4 +39,4 @@
   loop:
     - {key: "only-pinned", value: "false"}
     - {key: "lock-icons", value: "true"}
-    - {key: "pinned-launchers", value: "[{{ dock_pinned_apps | map('quote') | join(', ') }}]"}
+    - {key: "pinned-launchers", value: "{{ dock_pinned_apps | tojson }}"}

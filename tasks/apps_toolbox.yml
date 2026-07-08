@@ -7,6 +7,12 @@
   register: toolbox_list
   changed_when: false
 
+- name: Get parent user's UID
+  become: true
+  ansible.builtin.getent:
+    database: passwd
+    key: "{{ parent_username }}"
+
 - name: Create admin toolbox on device
   become: true
   become_user: "{{ parent_username }}"
@@ -14,14 +20,17 @@
     cmd: toolbox create --container {{ toolbox_name }}
   when: "toolbox_name not in toolbox_list.stdout"
   changed_when: true
+  environment:
+    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[parent_username][1] }}"
 
-- name: Install packages into admin toolbox
-  become: true
-  become_user: "{{ parent_username }}"
-  ansible.builtin.command:
-    cmd: >
-      toolbox run --container {{ toolbox_name }}
-      sudo dnf install --assumeyes --quiet
-      {{ toolbox_apps | join(' ') }}
-  register: installed_packages
-  changed_when: "'Nothing to do' not in installed_packages.stdout"
+# - name: Install packages into admin toolbox
+#   become: true
+#   become_method: ansible.builtin.su
+#   become_user: "{{ parent_username }}"
+#   ansible.builtin.command:
+#     cmd: >
+#       toolbox run --container {{ toolbox_name }}
+#       sudo dnf install --assumeyes --quiet
+#       {{ toolbox_apps | join(' ') }}
+#   register: installed_packages
+#   changed_when: "'Nothing to do' not in installed_packages.stdout"

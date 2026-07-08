@@ -1,4 +1,14 @@
 ---
+- name: Clear any stale update-lock from a previous interrupted run
+  become: true
+  ansible.builtin.systemd_service:
+    name: update-lock.service
+    state: stopped
+  register: clear_stale_lock
+  failed_when:
+    - clear_stale_lock.failed
+    - "'Could not find the requested service' not in clear_stale_lock.msg"
+
 - name: Prevent system from suspending while updates are being applied
   become: true
   ansible.builtin.command:
@@ -11,6 +21,9 @@
     cmd: rpm-ostree upgrade --check
   register: ostree_updates
   changed_when: false
+  failed_when:
+    - ostree_status.rc != 0
+    - "'No updates available' not in ostree_status.stdout"
 
 - name: Run ostree updates when available
   become: true
@@ -20,7 +33,7 @@
   changed_when: true
   notify: Reboot device
 
-- name: "Update flatpaks on system: {{ item }}"
+- name: "Update flatpak on system: {{ item }}"
   become: true
   community.general.flatpak:
     name: "{{ item }}"
@@ -28,16 +41,16 @@
     method: system
   loop: "{{ flatpak_apps }}"
 
-- name: Update existing packages installed in admin toolbox
-  become: true
-  become_user: "{{ parent_username }}"
-  ansible.builtin.command:
-    cmd: >
-      toolbox run --container {{ toolbox_name }}
-      sudo dnf upgrade --assumeyes --quiet
-      {{ toolbox_apps | join(' ') }}
-  register: updated_packages
-  changed_when: "'Nothing to do' not in updated_packages.stdout"
+# - name: Update existing packages installed in admin toolbox
+#   become: true
+#   become_user: "{{ parent_username }}"
+#   ansible.builtin.command:
+#     cmd: >
+#       toolbox run --container {{ toolbox_name }}
+#       sudo dnf upgrade --assumeyes --quiet
+#       {{ toolbox_apps | join(' ') }}
+#   register: updated_packages
+#   changed_when: "'Nothing to do' not in updated_packages.stdout"
 
 - name: Remove system update-lock after updates are complete
   become: true

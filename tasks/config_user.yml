@@ -9,20 +9,27 @@
     password: '!'
     expires: -1
 
-- name: "Create user: {{ item.user }}"
+- name: Create parent privileged user
   become: true
   ansible.builtin.user:
-    name: "{{ item.user }}"
+    name: "{{ parent_username }}"
     state: present
-    password: "{{ item.pass }}"
+    password: "{{ parent_password | password_hash('sha512') }}"
     expires: -1
     groups: wheel
     append: true
-  loop:
-    - {"user":"{{ parent_username }}", "pass":"{{ parent_password }}"}
-    - {"user":"{{ ansible_username }}", "pass":"!"}
 
-- name: "Add ssh public key for {{ item.user }}"
+- name: Create ansible service account
+  become: true
+  ansible.builtin.user:
+    name: "{{ ansible_username }}"
+    state: present
+    password: "!"                                            # sets no password/password authentication cannot be used
+    expires: -1
+    groups: wheel
+    append: true
+
+- name: "Add ssh public key"
   become: true
   ansible.posix.authorized_key:
     user: "{{ item.user }}"
@@ -31,6 +38,20 @@
   loop:
     - {"user":"{{ parent_username }}", "key":"{{ parent_public_key }}"}
     - {"user":"{{ ansible_username }}", "key":"{{ ansible_public_key }}"}
+  loop_control:
+    label: "{{ item.user }}"
+
+- name: Pre-create .ansible/tmp for each user to suppress remote_tmp warning
+  become: true
+  become_user: "{{ item }}"
+  ansible.builtin.file:
+    path: "~/.ansible/tmp"
+    state: directory
+    mode: '0700'
+  loop:
+    - "{{ parent_username }}"
+    - "{{ ansible_username }}"
+    - "{{ child_username }}"
 
 - name: "Enable autologin for {{ child_username }}"
   become: true

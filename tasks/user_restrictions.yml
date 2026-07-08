@@ -1,4 +1,15 @@
 ---
+- name: Ensure .local/bin exists for child user
+  become: true
+  become_user: "{{ child_username }}"
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "/home/{{ child_username }}/.local/bin"
+    - "/home/{{ child_username }}/.config/systemd/user/"
+
 - name: Deploy screentime check script
   become: true
   become_user: "{{ child_username }}"
@@ -23,10 +34,13 @@
     dest: "/home/{{ child_username }}/.config/systemd/user/screentime-check.timer"
     mode: '0644'
 
-- name: Enable lingering for child user
+- name: Enable lingering for users
   become: true
   ansible.builtin.command:
-    cmd: "loginctl enable-linger {{ child_username }}"
+    cmd: "loginctl enable-linger {{ item }}"
+  loop:
+    - "{{ child_username }}"
+    - "{{ parent_username }}"
   changed_when: true
 
 - name: Get child user's UID
@@ -34,6 +48,12 @@
   ansible.builtin.getent:
     database: passwd
     key: "{{ child_username }}"
+
+- name: Wait for child user's D-Bus session to be available
+  become: true
+  ansible.builtin.wait_for:
+    path: "/run/user/{{ getent_passwd[child_username][1] }}/bus"
+    timeout: 30
 
 - name: Enable and start screentime-check timer
   become: true
