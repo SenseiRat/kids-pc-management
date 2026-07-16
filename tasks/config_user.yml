@@ -6,7 +6,7 @@
   ansible.builtin.user:
     name: "{{ child_username }}"
     state: present
-    password: '!'
+    password: "{{ child_password | password_hash('sha512') }}"
     expires: -1
 
 - name: Create parent privileged user
