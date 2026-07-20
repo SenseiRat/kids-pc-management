@@ -1,5 +1,6 @@
 ---
 - name: Disable screen lock for child account
+  become: true
   become_user: "{{ child_username }}"
   community.general.dconf:
     key: "/org/gnome/desktop/screensaver/lock-enabled"
