@@ -65,6 +65,7 @@
   loop:
     - {"option":"autologin-user", "value":"{{ child_username }}"}
     - {"option":"autologin-user-timeout", "value":"0"}
+    - {"option":"autologin-session", "value":"budgie-desktop"}
 
 - name: "Enable passwordless sudo for {{ ansible_username }}"
   become: true

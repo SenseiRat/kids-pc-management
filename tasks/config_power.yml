@@ -1,4 +1,11 @@
 ---
+- name: Disable screen lock for child account
+  become_user: "{{ child_username }}"
+  community.general.dconf:
+    key: "/org/gnome/desktop/screensaver/lock-enabled"
+    value: "false"
+    state: present
+
 - name: Set idle time before turning off monitors
   become: true
   become_user: "{{ child_username }}"
