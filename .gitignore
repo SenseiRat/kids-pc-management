@@ -1,16 +1,14 @@
-# Secrets
-.ansible_vault_pass
-.ansible_public_key
-.ansible_private_key
-
 # Ansible artifacts
 *.retry
 collections/ansible_collections/
 
-# Vault password files
+# Vault password files and secrets
 .vault_pass
 .vault_password
 *.vault_pass
+.ansible_vault_pass
+.ansible_public_key
+.ansible_private_key
 
 # Inventory overrides and local config
 *.local.yml
