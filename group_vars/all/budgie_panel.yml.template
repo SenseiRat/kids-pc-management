@@ -1,0 +1,68 @@
+---
+budgie_panels:
+  - uuid: "4d2599c4-7a1c-11f1-bbf4-b6d3f555b66e"
+    settings:
+      - {key: "location", value: "'bottom'"}
+      - {key: "dock-mode", value: "true"}
+      - {key: "autohide", value: "'none'"}
+      - {key: "transparency", value: "'none'"}
+      - {key: "enable-shadow", value: "true"}
+      - {key: "spacing", value: "1"}
+      - {key: "size", value: "72"}
+      - {key: "applets", value: "['5235707e-7a1c-11f1-bbf4-b6d3f555b66e']"}
+  - uuid: "94126d9e-7a1c-11f1-bbf4-b6d3f555b66e"
+    settings:
+      - {key: "location", value: "'top'"}
+      - {key: "dock-mode", value: "false"}
+      - {key: "autohide", value: "'automatic'"}
+      - {key: "transparency", value: "'none'"}
+      - {key: "enable-shadow", value: "false"}
+      - {key: "spacing", value: "2"}
+      - {key: "size", value: "36"}
+      - key: "applets"
+        value: >-
+          ['c3a2a6dc-7a1c-11f1-bbf4-b6d3f555b66e',
+          '9c708a34-7a1c-11f1-bbf4-b6d3f555b66e',
+          'dc0f9c70-7a1c-11f1-bbf4-b6d3f555b66e',
+          'ea5b9f40-7a1c-11f1-bbf4-b6d3f555b66e',
+          '9a1f0026-7a1c-11f1-bbf4-b6d3f555b66e',
+          'cf968f58-7a1c-11f1-bbf4-b6d3f555b66e']
+
+budgie_applets:
+  - uuid: "5235707e-7a1c-11f1-bbf4-b6d3f555b66e"
+    settings:
+      - {key: "name", value: "'Icon Task List'"}
+      - {key: "alignment", value: "'start'"}
+      - {key: "position", value: "0"}
+  - uuid: "c3a2a6dc-7a1c-11f1-bbf4-b6d3f555b66e"
+    settings:
+      - {key: "name", value: "'System Tray'"}
+      - {key: "alignment", value: "'end'"}
+      - {key: "position", value: "0"}
+  - uuid: "9c708a34-7a1c-11f1-bbf4-b6d3f555b66e"
+    settings:
+      - {key: "name", value: "'Budgie Menu'"}
+      - {key: "alignment", value: "'start'"}
+      - {key: "position", value: "0"}
+  - uuid: "dc0f9c70-7a1c-11f1-bbf4-b6d3f555b66e"
+    settings:
+      - {key: "name", value: "'Separator'"}
+      - {key: "alignment", value: "'end'"}
+      - {key: "position", value: "2"}
+  - uuid: "ea5b9f40-7a1c-11f1-bbf4-b6d3f555b66e"
+    settings:
+      - {key: "name", value: "'User Indicator'"}
+      - {key: "alignment", value: "'end'"}
+      - {key: "position", value: "4"}
+  - uuid: "9a1f0026-7a1c-11f1-bbf4-b6d3f555b66e"
+    settings:
+      - {key: "name", value: "'Clock'"}
+      - {key: "alignment", value: "'end'"}
+      - {key: "position", value: "3"}
+  - uuid: "cf968f58-7a1c-11f1-bbf4-b6d3f555b66e"
+    settings:
+      - {key: "name", value: "'Status Indicator'"}
+      - {key: "alignment", value: "'end'"}
+      - {key: "position", value: "1"}
+
+budgie_icon_tasklist_uuid: "5235707e-7a1c-11f1-bbf4-b6d3f555b66e"

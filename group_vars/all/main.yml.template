@@ -1,0 +1,26 @@
+---
+# User variables
+child_username: ""
+
+parent_username: ""
+parent_public_key: ""
+
+ansible_username: "ansible"
+ansible_public_key: ""
+
+# Screentime limits (minutes)
+# Sample values for reference:
+#   30 minutes = 30
+#   1 hour     = 60
+#   4 hours    = 240
+#   6 hours    = 360
+#   8 hours    = 480
+#   12 hours   = 720
+#   24 hours (disabled) = 1440
+screentime_daily_limit_minutes: 720
+
+# Explicit deny list of applications after limit is reached
+screentime_restricted_apps:
+  - "com.valvesoftware.Steam"
+
+screentime_poll_interval_minutes: 5

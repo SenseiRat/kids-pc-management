@@ -1,0 +1,27 @@
+---
+# Approved software lists
+flatpak_apps:
+  - "org.mozilla.firefox"                           # Firefox web browser
+  - "com.valvesoftware.Steam"                       # Steam video games
+  - "com.github.iwalton3.jellyfin-media-player"     # Jellyfin Media Player
+  - "org.jellyfin.JellyfinDesktop"
+  - "org.kde.gcompris"                              # Educational games
+  - "org.tuxpaint.Tuxpaint"                         # Paint and Draw
+  - "org.prismlauncher.PrismLauncher"               # Minecraft Prism Launcher
+
+toolbox_name: "admin-toolbox"
+toolbox_apps:
+  - "htop"                                          # See system resources
+  - "vim"                                           # Nano is weak
+  - "dconf"                                         # Desktop environment configuration
+  - "git"                                           # Pulling git repos for custom software
+
+ostree_apps: []
+
+# Apps pinned to the dock, in display order.
+dock_pinned_apps:
+  - "org.mozilla.firefox.desktop"
+  - "com.valvesoftware.Steam.desktop"
+  - "com.github.iwalton3.jellyfin-media-player.desktop"
+  - "org.kde.gcompris.desktop"
+  - "org.tuxpaint.Tuxpaint.desktop"
