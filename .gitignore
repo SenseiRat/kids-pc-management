@@ -1,5 +1,6 @@
 # Vars files (replaced by templates)
 group_vars/all/*.yml
+inventory/*.yml
 
 # Ansible artifacts
 *.retry
