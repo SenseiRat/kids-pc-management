@@ -1,4 +1,4 @@
-# Child Computer Management
+# Kid's PC Management
 
 Infrastructure-as-code for provisioning and maintaining my child's computer. It's an Ansible
 playbook that configures user accounts, networking, security hardening, screen-time limits,
