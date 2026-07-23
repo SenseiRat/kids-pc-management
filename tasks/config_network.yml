@@ -1,0 +1,32 @@
+---
+- name: Set static network configuration on device
+  become: true
+  community.general.nmcli:
+    conn_name: Columbia Falls
+    type: wifi
+    ifname: wlp1s0
+    ssid: "{{ wifi_ssid }}"
+    wifi_sec:
+      key-mgmt: wpa-psk
+      psk: "{{ wifi_psk }}"
+    ip4: "{{ static_ip }}/24"
+    gw4: "{{ gateway_ip }}"
+    dns4: "{{ cloudflare_dns_ipv4 }}"
+    dns6: "{{ cloudflare_dns_ipv6 }}"
+    state: present
+
+- name: Add host entries for homelab access
+  become: true
+  ansible.builtin.lineinfile:
+    path: /etc/hosts
+    regexp: "^{{ homelab_ip }}\\s+{{ item }}$"
+    line: "{{ homelab_ip }} {{ item }}"
+  loop:
+    - jellyfin.starnes.cloud
+    - minecraft.starnes.cloud
+
+- name: Set hostname for device
+  become: true
+  ansible.builtin.hostname:
+    name: "{{ device_hostname }}"
+    use: systemd

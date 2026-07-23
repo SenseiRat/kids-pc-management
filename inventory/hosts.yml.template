@@ -1,0 +1,6 @@
+# inventory.yml
+all:
+  hosts:
+    child-pc:
+      ansible_host: "{{ static_ip }}"
+      ansible_user: ansible

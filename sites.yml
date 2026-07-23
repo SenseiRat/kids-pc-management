@@ -1,0 +1,44 @@
+---
+- name: Configure {{ child_name }}'s computer
+  hosts: child-pc
+  become: true
+  tasks:
+    - name: User Configuration
+      ansible.builtin.import_tasks: tasks/config_user.yml
+    - name: Network Configuration
+      ansible.builtin.import_tasks: tasks/config_network.yml
+    - name: Power Configuration
+      ansible.builtin.import_tasks: tasks/config_power.yml
+    - name: Security Configuration
+      ansible.builtin.import_tasks: tasks/config_security.yml
+
+    - name: OS tree
+      ansible.builtin.import_tasks: tasks/apps_ostree.yml
+    - name: Flatpaks
+      ansible.builtin.import_tasks: tasks/apps_flatpak.yml
+    - name: Toolbox
+      ansible.builtin.import_tasks: tasks/apps_toolbox.yml
+    - name: Updates
+      ansible.builtin.import_tasks: tasks/apps_updates.yml
+
+    - name: User Desktop Configuration
+      ansible.builtin.import_tasks: tasks/user_desktop.yml
+    - name: User App Restrictions
+      ansible.builtin.import_tasks: tasks/user_restrictions.yml
+
+
+  handlers:
+    - name: Reboot device
+      ansible.builtin.reboot:
+
+    - name: Restart logind
+      become: true
+      ansible.builtin.systemd_service:
+        name: systemd-logind.service
+        state: restarted
+
+    - name: Restart budgie panel
+      ansible.builtin.command: pkill -u {{ child_username }} budgie-panel
+      register: pkill_budgie
+      changed_when: pkill_budgie.rc == 0
+      failed_when: pkill_budgie.rc not in [0,1]
