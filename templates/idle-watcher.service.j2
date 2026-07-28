@@ -1,0 +1,12 @@
+[Unit]
+Description=Independent input-idle watcher feeding logind IdleHint
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/bin/idle-watcher.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

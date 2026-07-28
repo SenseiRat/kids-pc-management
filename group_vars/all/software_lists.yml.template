@@ -16,7 +16,9 @@ toolbox_apps:
   - "dconf"                                         # Desktop environment configuration
   - "git"                                           # Pulling git repos for custom software
 
-ostree_apps: []
+ostree_apps:
+  - steam-devices
+  - python3-evdev
 
 # Apps pinned to the dock, in display order.
 dock_pinned_apps:

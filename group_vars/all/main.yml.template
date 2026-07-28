@@ -24,3 +24,4 @@ screentime_restricted_apps:
   - "com.valvesoftware.Steam"
 
 screentime_poll_interval_minutes: 5
+idle_watcher_threshold: 60

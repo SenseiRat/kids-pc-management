@@ -1,5 +1,5 @@
 ---
-- name: Configure {{ child_name }}'s computer
+- name: Configure child's computer
   hosts: child-pc
   become: true
   tasks:
@@ -14,6 +14,11 @@
 
     - name: OS tree
       ansible.builtin.import_tasks: tasks/apps_ostree.yml
+    - name: Apply any pending reboot
+      ansible.builtin.meta: flush_handlers
+    - name: Idle Watcher
+      ansible.builtin.import_tasks: tasks/config_idle_watcher.yml
+
     - name: Flatpaks
       ansible.builtin.import_tasks: tasks/apps_flatpak.yml
     - name: Toolbox
@@ -37,8 +42,14 @@
         name: systemd-logind.service
         state: restarted
 
+    - name: Restart idle watcher
+      become: true
+      ansible.builtin.systemd_service:
+        name: idle-watcher.service
+        state: restarted
+
     - name: Restart budgie panel
       ansible.builtin.command: pkill -u {{ child_username }} budgie-panel
       register: pkill_budgie
       changed_when: pkill_budgie.rc == 0
-      failed_when: pkill_budgie.rc not in [0,1]
+      failed_when: pkill_budgie.rc not in [0, 1]

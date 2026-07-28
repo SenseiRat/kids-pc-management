@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+import select
+import subprocess
+import time
+
+from evdev import InputDevice, list_devices
+
+CHILD_USERNAME = "{{ child_username }}"
+IDLE_THRESHOLD_SECONDS = {{ idle_watcher_threshold }}
+RESCAN_INTERVAL_SECONDS = 30
+
+
+def get_session_id():
+    result = subprocess.run(
+        ["loginctl", "show-user", CHILD_USERNAME, "-p", "Sessions", "--value"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    sessions = result.stdout.split()
+    return sessions[0] if sessions else None
+
+
+def set_idle_hint(idle):
+    session_id = get_session_id()
+    if not session_id:
+        return
+    subprocess.run(
+        [
+            "busctl", "call", "org.freedesktop.login1",
+            f"/org/freedesktop/login1/session/{session_id}",
+            "org.freedesktop.login1.Session", "SetIdleHint",
+            "b", "true" if idle else "false",
+        ],
+        check=False,
+    )
+
+
+def open_devices():
+    devices = {}
+    for path in list_devices():
+        try:
+            dev = InputDevice(path)
+        except OSError:
+            continue
+        devices[dev.fd] = dev
+    return devices
+
+
+def main():
+    devices = open_devices()
+    last_activity = time.monotonic()
+    last_rescan = last_activity
+    idle = False
+
+    while True:
+        now = time.monotonic()
+        remaining = IDLE_THRESHOLD_SECONDS - (now - last_activity)
+        timeout = max(0.0, min(remaining, 5.0))
+        ready, _, _ = select.select(devices, [], [], timeout)
+
+        if ready:
+            for fd in ready:
+                try:
+                    for _event in devices[fd].read():
+                        pass
+                except (OSError, BlockingIOError):
+                    del devices[fd]
+                    continue
+            last_activity = time.monotonic()
+            if idle:
+                set_idle_hint(False)
+                idle = False
+        elif not idle and time.monotonic() - last_activity >= IDLE_THRESHOLD_SECONDS:
+            set_idle_hint(True)
+            idle = True
+
+        if time.monotonic() - last_rescan >= RESCAN_INTERVAL_SECONDS:
+            devices = open_devices()
+            last_rescan = time.monotonic()
+
+
+if __name__ == "__main__":
+    main()

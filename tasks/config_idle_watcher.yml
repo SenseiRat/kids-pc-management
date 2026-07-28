@@ -1,0 +1,28 @@
+---
+- name: Deploy idle watcher script
+  become: true
+  ansible.builtin.template:
+    src: idle-watcher.py.j2
+    dest: /usr/local/bin/idle-watcher.py
+    owner: root
+    group: root
+    mode: '0755'
+  notify: Restart idle watcher
+
+- name: Deploy idle watcher systemd service
+  become: true
+  ansible.builtin.template:
+    src: idle-watcher.service.j2
+    dest: /etc/systemd/system/idle-watcher.service
+    owner: root
+    group: root
+    mode: '0644'
+  notify: Restart idle watcher
+
+- name: Enable and start idle watcher service
+  become: true
+  ansible.builtin.systemd_service:
+    name: idle-watcher.service
+    state: started
+    enabled: true
+    daemon_reload: true

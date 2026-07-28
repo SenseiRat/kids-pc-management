@@ -4,7 +4,7 @@ Infrastructure-as-code for provisioning and maintaining my child's computer. It'
 playbook that configures user accounts, networking, security hardening, screen-time limits,
 approved software, and desktop layout on a single machine.
 
-There is a severe lack of parental management software in the Linux world, which I think would be especially useful given immutable distributions like Fedora Silverblue and NixOS.  This is my attempt to build something simple, that respected my child's privacy and ability to explore while still enforcing some guardrails so that my wife and I could be engaged with him as he explored.
+There is a lack of parental management software in the Linux world, which I think would be especially useful given immutable distributions like Fedora Silverblue and NixOS.  This is my attempt to build something simple, that respected my child's privacy and ability to explore while still enforcing some guardrails so that my wife and I could be engaged with him as he explored.
 
 ## Requirement: Fedora Silverblue
 
