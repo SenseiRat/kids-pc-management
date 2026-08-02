@@ -3,11 +3,15 @@ import select
 import subprocess
 import time
 
-from evdev import InputDevice, list_devices
+from evdev import InputDevice, ecodes, list_devices
 
 CHILD_USERNAME = "{{ child_username }}"
 IDLE_THRESHOLD_SECONDS = {{ idle_watcher_threshold }}
 RESCAN_INTERVAL_SECONDS = 30
+CONTROLLER_DEADZONE_PERCENT = {{ idle_watcher_controller_deadzone_percent }}
+
+# Event types that always count as real activity regardless of magnitude.
+ACTIVITY_EVENT_TYPES = {ecodes.EV_KEY, ecodes.EV_REL}
 
 
 def get_session_id():
@@ -36,19 +40,51 @@ def set_idle_hint(idle):
     )
 
 
-def open_devices():
-    devices = {}
+def abs_deadzones(dev):
+    """Map each EV_ABS code on this device to (threshold, resting_value).
+
+    `resting_value` is whatever the axis currently reads (assumed untouched
+    at scan time), and `threshold` is the larger of the driver-reported
+    "flat" deadzone and a percentage of the axis's full range. This absorbs
+    stick/trigger drift on worn controllers so it isn't mistaken for input.
+    """
+    deadzones = {}
+    for code, info in dev.capabilities(absinfo=True).get(ecodes.EV_ABS, []):
+        axis_range = info.max - info.min
+        threshold = max(info.flat, axis_range * CONTROLLER_DEADZONE_PERCENT / 100)
+        deadzones[code] = (threshold, info.value)
+    return deadzones
+
+
+def scan_devices(devices):
+    """Add newly connected devices to `devices` in place.
+
+    Devices already being tracked are left untouched so their deadzone
+    baselines aren't recalibrated mid-play.
+    """
+    known_paths = {dev.path for dev, _ in devices.values()}
     for path in list_devices():
+        if path in known_paths:
+            continue
         try:
             dev = InputDevice(path)
         except OSError:
             continue
-        devices[dev.fd] = dev
-    return devices
+        devices[dev.fd] = (dev, abs_deadzones(dev))
+
+
+def is_real_activity(event, deadzones):
+    if event.type in ACTIVITY_EVENT_TYPES:
+        return True
+    if event.type == ecodes.EV_ABS:
+        threshold, resting_value = deadzones.get(event.code, (0, 0))
+        return abs(event.value - resting_value) > threshold
+    return False
 
 
 def main():
-    devices = open_devices()
+    devices = {}
+    scan_devices(devices)
     last_activity = time.monotonic()
     last_rescan = last_activity
     idle = False
@@ -60,23 +96,28 @@ def main():
         ready, _, _ = select.select(devices, [], [], timeout)
 
         if ready:
+            activity_detected = False
             for fd in ready:
+                dev, deadzones = devices[fd]
                 try:
-                    for _event in devices[fd].read():
-                        pass
+                    for event in dev.read():
+                        if is_real_activity(event, deadzones):
+                            activity_detected = True
                 except (OSError, BlockingIOError):
                     del devices[fd]
                     continue
-            last_activity = time.monotonic()
-            if idle:
-                set_idle_hint(False)
-                idle = False
+
+            if activity_detected:
+                last_activity = time.monotonic()
+                if idle:
+                    set_idle_hint(False)
+                    idle = False
         elif not idle and time.monotonic() - last_activity >= IDLE_THRESHOLD_SECONDS:
             set_idle_hint(True)
             idle = True
 
         if time.monotonic() - last_rescan >= RESCAN_INTERVAL_SECONDS:
-            devices = open_devices()
+            scan_devices(devices)
             last_rescan = time.monotonic()
 
 

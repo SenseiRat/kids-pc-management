@@ -1,43 +1,110 @@
 #!/bin/bash
+set -u
 
-STATE_FILE="$HOME/.local/state/screentime/state"
-mkdir -p "$(dirname "$STATE_FILE")"
+STATE_DIR="$HOME/.local/state/screentime"
+STATE_FILE="$STATE_DIR/state"
+STATUS_FILE="$STATE_DIR/status"
+mkdir -p "$STATE_DIR"
 
 TODAY=$(date +%F)
-DAILY_LIMIT={{ screentime_daily_limit_minutes }}
-POLL_INTERVAL={{ screentime_poll_interval_minutes }}
+POLL_INTERVAL_SECONDS={{ screentime_poll_interval_seconds }}
+WARNING_SECONDS=$(( {{ screentime_warning_minutes }} * 60 ))
+FINAL_WARNING_SECONDS=$(( {{ screentime_final_warning_minutes }} * 60 ))
+
+APP_IDS=(
+{% for app in screentime_apps %}
+    "{{ app.app }}"
+{% endfor %}
+)
+
+declare -A APP_LIMIT_SECONDS=(
+{% for app in screentime_apps %}
+    ["{{ app.app }}"]={{ app.daily_limit_minutes * 60 }}
+{% endfor %}
+)
+
+declare -A USED_SECONDS WARNED_5 WARNED_1 RESTRICTED
+
+for APP in "${APP_IDS[@]}"; do
+    USED_SECONDS["$APP"]=0
+    WARNED_5["$APP"]="no"
+    WARNED_1["$APP"]="no"
+    RESTRICTED["$APP"]="no"
+done
 
 if [[ -f "$STATE_FILE" ]]; then
-    read -r STORED_DATE STORED_MINUTES STORED_WARNED < "$STATE_FILE"
-else
-    STORED_DATE=""
-    STORED_MINUTES=0
-    STORED_WARNED="no"
-fi
-
-if [[ "$STORED_DATE" != "$TODAY" ]]; then
-    STORED_DATE="$TODAY"
-    STORED_MINUTES=0
-    STORED_WARNED="no"
+    while read -r LINE_APP LINE_DATE LINE_SECONDS LINE_W5 LINE_W1 LINE_RESTRICTED; do
+        [[ -z "${LINE_APP:-}" || "$LINE_DATE" != "$TODAY" ]] && continue
+        [[ -n "${USED_SECONDS[$LINE_APP]+set}" ]] || continue
+        USED_SECONDS["$LINE_APP"]=$LINE_SECONDS
+        WARNED_5["$LINE_APP"]=$LINE_W5
+        WARNED_1["$LINE_APP"]=$LINE_W1
+        RESTRICTED["$LINE_APP"]=$LINE_RESTRICTED
+    done < "$STATE_FILE"
 fi
 
 SESSION_ID=$(loginctl show-user "$(whoami)" -p Sessions --value | awk '{print $1}')
 IDLE_HINT=$(loginctl show-session "$SESSION_ID" -p IdleHint --value)
 
+# Which flatpak app (if any) currently has focus, identified by reading
+# /.flatpak-info out of the focused window's process's mount namespace -
+# every flatpak-sandboxed process has one, naming the exact app ID.
+ACTIVE_APP=""
 if [[ "$IDLE_HINT" == "no" ]]; then
-    STORED_MINUTES=$((STORED_MINUTES + POLL_INTERVAL))
+    ACTIVE_PID=$(xdotool getactivewindow getwindowpid 2>/dev/null) || true
+    if [[ -n "${ACTIVE_PID:-}" && -r "/proc/$ACTIVE_PID/root/.flatpak-info" ]]; then
+        ACTIVE_APP=$(awk -F= '/^name=/ {print $2; exit}' "/proc/$ACTIVE_PID/root/.flatpak-info")
+    fi
 fi
 
-echo "$STORED_DATE $STORED_MINUTES $STORED_WARNED" > "$STATE_FILE"
+{
+    printf 'Screen time status as of %s\n\n' "$(date '+%F %T')"
+    printf '%-40s %8s %8s %8s\n' "APPLICATION" "USED" "LIMIT" "LEFT"
+} > "$STATUS_FILE.tmp"
 
-if [[ "$STORED_MINUTES" -ge "$DAILY_LIMIT" && "$STORED_WARNED" == "no" ]]; then
-    timeout 30s zenity --warning --title="Screen Time" \
-        --text="You've reached your screen time limit for today.\nThis will close in 30 seconds."
+: > "$STATE_FILE.tmp"
 
-{% for app in screentime_restricted_apps %}
-    flatpak kill {{ app }}
-{% endfor %}
+for APP in "${APP_IDS[@]}"; do
+    LIMIT_SECONDS=${APP_LIMIT_SECONDS[$APP]}
+    USED=${USED_SECONDS[$APP]}
+    W5=${WARNED_5[$APP]}
+    W1=${WARNED_1[$APP]}
+    RESTR=${RESTRICTED[$APP]}
 
-    STORED_WARNED="yes"
-    echo "$STORED_DATE $STORED_MINUTES $STORED_WARNED" > "$STATE_FILE"
-fi
+    if [[ "$ACTIVE_APP" == "$APP" ]]; then
+        USED=$((USED + POLL_INTERVAL_SECONDS))
+    fi
+
+    REMAINING_SECONDS=$((LIMIT_SECONDS - USED))
+
+    if [[ "$REMAINING_SECONDS" -le "$WARNING_SECONDS" && "$W5" == "no" ]]; then
+        (timeout 60s zenity --warning --title="Screen Time" \
+            --text="${APP}: {{ screentime_warning_minutes }} minutes of screen time left today." &)
+        W5="yes"
+    fi
+
+    if [[ "$REMAINING_SECONDS" -le "$FINAL_WARNING_SECONDS" && "$W1" == "no" ]]; then
+        (timeout 60s zenity --warning --title="Screen Time" \
+            --text="${APP}: {{ screentime_final_warning_minutes }} minute of screen time left today." &)
+        W1="yes"
+    fi
+
+    if [[ "$REMAINING_SECONDS" -le 0 ]]; then
+        if [[ "$RESTR" == "no" ]]; then
+            (timeout 60s zenity --warning --title="Screen Time" \
+                --text="${APP} has reached its screen time limit for today.\nThis will close in 60 seconds." &)
+            RESTR="yes"
+        fi
+        flatpak kill "$APP" 2>/dev/null || true
+    fi
+
+    echo "$APP $TODAY $USED $W5 $W1 $RESTR" >> "$STATE_FILE.tmp"
+
+    LEFT_SECONDS=$REMAINING_SECONDS
+    [[ "$LEFT_SECONDS" -lt 0 ]] && LEFT_SECONDS=0
+    printf '%-40s %7dm %7dm %7dm\n' \
+        "$APP" $((USED / 60)) $((LIMIT_SECONDS / 60)) $((LEFT_SECONDS / 60)) >> "$STATUS_FILE.tmp"
+done
+
+mv "$STATE_FILE.tmp" "$STATE_FILE"
+mv "$STATUS_FILE.tmp" "$STATUS_FILE"

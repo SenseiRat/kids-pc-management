@@ -3,4 +3,7 @@ Description=Check {{ child_username }} screen time usage
 
 [Service]
 Type=oneshot
+# DISPLAY is required for xdotool to identify the focused window; this is a
+# single-seat machine so the autologin session is always display :0.
+Environment=DISPLAY=:0
 ExecStart=/home/{{ child_username }}/.local/bin/screentime_check.sh

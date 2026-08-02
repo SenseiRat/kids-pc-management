@@ -52,7 +52,7 @@
 - name: Wait for child user's D-Bus session to be available
   become: true
   ansible.builtin.wait_for:
-    path: "/run/user/{{ getent_passwd[child_username][1] }}/bus"
+    path: "/run/user/{{ ansible_facts.getent_passwd[child_username][1] }}/bus"
     timeout: 30
 
 - name: Enable and start screentime-check timer
@@ -65,4 +65,4 @@
     enabled: true
     daemon_reload: true
   environment:
-    XDG_RUNTIME_DIR: "/run/user/{{ getent_passwd[child_username][1] }}"
+    XDG_RUNTIME_DIR: "/run/user/{{ ansible_facts.getent_passwd[child_username][1] }}"
