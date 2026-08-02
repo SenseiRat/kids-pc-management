@@ -33,7 +33,7 @@
   changed_when: true
   notify: Reboot device
 
-- name: "Update flatpak on system: {{ item }}"
+- name: "Update flatpaks on system"
   become: true
   community.general.flatpak:
     name: "{{ item }}"
@@ -41,6 +41,7 @@
     method: system
   loop: "{{ flatpak_apps }}"
 
+# TODO update admin toolbox apps
 # - name: Update existing packages installed in admin toolbox
 #   become: true
 #   become_user: "{{ parent_username }}"
