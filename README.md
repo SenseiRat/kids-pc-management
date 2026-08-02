@@ -69,6 +69,23 @@ set:
 ./entrypoint.sh run skip tag1,tag2    # apply everything except specific tags
 ```
 
+## Screen time status
+
+Each restricted app in `screentime_apps` (`group_vars/all/main.yml`) gets its own daily time
+budget, tracked independently. Time only accrues against an app while its window is focused
+*and* there's real keyboard/mouse/controller input (an idle game left open in the background
+doesn't count, and worn-controller stick drift is filtered out via
+`idle_watcher_controller_deadzone_percent`). Warnings pop up via `zenity` at
+`screentime_warning_minutes` and `screentime_final_warning_minutes` remaining, and can be
+dismissed early.
+
+To check usage without touching the child's session, SSH in and read the status file it
+writes on every poll:
+
+```
+ssh <child_username>@<host> cat .local/state/screentime/status
+```
+
 ## Maintenance window
 
 The playbook installs systemd timers on the target machine that hold it awake from **02:00 to
