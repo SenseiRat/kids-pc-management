@@ -34,7 +34,31 @@
 
   handlers:
     - name: Reboot device
-      ansible.builtin.reboot:
+      ansible.builtin.shell: |
+        set -euo pipefail
+
+        SESSION_ID=$(loginctl show-user "{{ child_username }}" -p Sessions --value 2>/dev/null | awk '{print $1}') || true
+
+        is_idle_long_enough() {
+            [[ -z "$SESSION_ID" ]] && return 0
+
+            local idle_hint idle_since_usec idle_seconds
+            idle_hint=$(loginctl show-session "$SESSION_ID" -p IdleHint --value)
+            [[ "$idle_hint" == "yes" ]] || return 1
+
+            idle_since_usec=$(loginctl show-session "$SESSION_ID" -p IdleSinceHint --value)
+            [[ "$idle_since_usec" -gt 0 ]] || return 1
+
+            idle_seconds=$(( $(date +%s) - idle_since_usec / 1000000 ))
+            (( idle_seconds >= {{ reboot_idle_threshold_minutes * 60 }} ))
+        }
+
+        if is_idle_long_enough; then
+            reboot
+        else
+            shutdown -r 01:30
+        fi
+      changed_when: true
 
     - name: Restart logind
       become: true
